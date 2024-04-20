@@ -33,14 +33,13 @@ public class UserObj implements UserDetails {
     Long userId;
     @Column
     @NotNull
-    @UniqueElements(message = "username is already taken")
     String username;
     @Column
     @NotNull
     String password;
     @Column
-    @NotNull
-    @Email(message = "email is already taken")
+
+    @Email
     String email;
     @CreationTimestamp
     Date creationTimestamp;

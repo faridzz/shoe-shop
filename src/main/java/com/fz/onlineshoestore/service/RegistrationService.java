@@ -23,4 +23,10 @@ public class RegistrationService {
         }
 
     }
+    public Boolean emailCheck(String email){
+        return userRepository.existsByEmail(email);
+    }
+    public Boolean usernameCheck(String username){
+        return userRepository.existsByUsername(username);
+    }
 }

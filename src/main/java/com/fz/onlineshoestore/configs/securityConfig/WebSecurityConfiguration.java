@@ -5,6 +5,9 @@ import com.fz.onlineshoestore.model.UserObj;
 import com.fz.onlineshoestore.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.ObjectPostProcessor;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -16,11 +19,16 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.logout.HeaderWriterLogoutHandler;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter;
 
 import static org.springframework.security.config.Customizer.withDefaults;
+import static org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter.Directive.COOKIES;
 
 @Configuration
-@EnableWebSecurity(debug = true)
+@EnableWebSecurity
 public class WebSecurityConfiguration {
     @Bean
     PasswordEncoder passwordEncoder() {
@@ -48,7 +56,7 @@ public class WebSecurityConfiguration {
 
     }
 
-//    @Bean
+    //    @Bean
 //    public UserDetailsService userDetailsService() throws Exception {
 //        User.UserBuilder users = User.withDefaultPasswordEncoder();
 //        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
@@ -56,19 +64,39 @@ public class WebSecurityConfiguration {
 //        return manager;
 //
 //    }
+//    @Bean
+//    public AuthenticationManager authenticationManager(
+//            AuthenticationConfiguration configuration) throws Exception {
+//        return configuration.getAuthenticationManager();
+//    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-        http.csrf(csrf -> csrf.disable())
+        http
                 .authorizeRequests(authorize -> authorize
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/users/**").hasAnyRole("USER", "ADMIN")
                 )
-//                .formLogin(form -> form.loginProcessingUrl("/api/login")).logout(logout -> logout.logoutUrl("/api/logout"))
-                .httpBasic(withDefaults())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                .formLogin(form -> form.loginProcessingUrl("/login/").permitAll()).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+//                        .defaultSuccessUrl("/success/")
+//                        )
+//                .logout(logout -> logout
+//                        .deleteCookies("JSESSIONID")
+//                        .logoutUrl("/logout/")
+//                        .logoutSuccessUrl("/login/")
+//                        .permitAll())
+
+                .httpBasic((basic) -> basic
+                        .addObjectPostProcessor(new ObjectPostProcessor<BasicAuthenticationFilter>() {
+                            @Override
+                            public <O extends BasicAuthenticationFilter> O postProcess(O filter) {
+                                filter.setSecurityContextRepository(new HttpSessionSecurityContextRepository());
+                                return filter;
+                            }
+                        })
+                );
 
         return http.build();
     }
