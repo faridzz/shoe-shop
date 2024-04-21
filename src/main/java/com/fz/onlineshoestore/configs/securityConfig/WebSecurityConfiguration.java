@@ -64,22 +64,29 @@ public class WebSecurityConfiguration {
 //        return manager;
 //
 //    }
-//    @Bean
-//    public AuthenticationManager authenticationManager(
-//            AuthenticationConfiguration configuration) throws Exception {
-//        return configuration.getAuthenticationManager();
-//    }
+    @Bean
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-        http
+        http.csrf(csrf->csrf.disable())
                 .authorizeRequests(authorize -> authorize
+                        .requestMatchers(("/api/registrations")).permitAll()
+//                        .requestMatchers("/signin","/signin/").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/users/**").hasAnyRole("USER", "ADMIN")
                 )
-                .formLogin(form -> form.loginProcessingUrl("/login/").permitAll()).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+                .formLogin
+                        (form -> form.loginProcessingUrl("/login")
+                        .permitAll())
+                .sessionManagement
+                        (session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+
 //                        .defaultSuccessUrl("/success/")
 //                        )
 //                .logout(logout -> logout
@@ -88,15 +95,7 @@ public class WebSecurityConfiguration {
 //                        .logoutSuccessUrl("/login/")
 //                        .permitAll())
 
-                .httpBasic((basic) -> basic
-                        .addObjectPostProcessor(new ObjectPostProcessor<BasicAuthenticationFilter>() {
-                            @Override
-                            public <O extends BasicAuthenticationFilter> O postProcess(O filter) {
-                                filter.setSecurityContextRepository(new HttpSessionSecurityContextRepository());
-                                return filter;
-                            }
-                        })
-                );
+;
 
         return http.build();
     }
